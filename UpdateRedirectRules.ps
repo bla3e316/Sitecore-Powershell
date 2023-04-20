@@ -1,0 +1,80 @@
+Write-Host "Search started $(Get-Date -format 'u')" -ForegroundColor Green
+
+$languageOptions = New-Object System.Collections.Specialized.OrderedDictionary
+$languageOptions.Add("cs-CZ", "cs-CZ")
+$languageOptions.Add("de-DE", "de-DE")
+$languageOptions.Add("fr-FR", "fr-FR")
+$languageOptions.Add("en-AU", "en-AU")
+$languageOptions.Add("en-GB", "en-GB")
+$languageOptions.Add("es-ES", "es-ES")
+
+$result = Read-Variable -Parameters `
+    @{ Name = "redirectsRootFolder"; Title="Redirects Root Folder"; Source="Datasource=/sitecore/content/Redirects"; editor="droptree"}, `
+    @{ Name = "productRepositoryPath"; Title="Product Repository Path"; Source="Datasource=/sitecore/content/"; editor="droptree"}, `
+    @{ Name = "languageOption"; Value="Contains"; Title="Language"; Tooltip="Select Item Language"; editor="radio"; options=$languageOptions}  `
+    -Description "Search and replace vars:" -Title "Search and Replace" -Width 500 -Height 480 -OkButtonName "Proceed" -CancelButtonName "Abort"
+if($result -ne "ok")
+{
+    Exit
+}
+
+$redirects = Get-ChildItem -Path "master:/" + $redirectsRootFolder.Paths.Path -Language $languageOption
+$products = Get-ChildItem -Path "master:/" + $productRepositoryPath.Paths.Path -Language $languageOption | Get-ChildItem
+
+$number = 1
+$productsList = [System.Collections.ArrayList]@()
+foreach($product in $products){
+    $productRecord = [PSCustomObject]@{
+        "Number" = $number
+        "Name" = $product.DisplayName
+        "ID" = $product.Code
+        "EAN" = $product.EAN
+        }
+    $productsList.Add($productRecord) > $null
+    $number ++
+}
+#  Write-Host "`nProduct List" -ForegroundColor Green
+#  $productsList | Format-table
+# $productIDCodeList | Show-ListView
+
+$number = 1
+$redirectRules = [System.Collections.ArrayList]@()
+foreach($redirect in $redirects) {
+    $redirectItem = $redirect.Target
+        $redirectRecord = [PSCustomObject]@{
+        "Num" = $number
+        "Path" = $redirect.Path
+        "Target" = $redirect.Target
+        }
+    $redirectRules.Add($redirectRecord) > $null
+    $number ++
+}
+Write-Host "`nRedirect Rules" -ForegroundColor Green
+$redirectRules | Format-table
+
+Write-Host "`nUpdating Redirect Rules" -ForegroundColor Green
+$number = 1
+$redirectRulesUpdate = [System.Collections.ArrayList]@()
+foreach($redirect in $redirects) {
+    $redirectTarget = $redirect.Target
+    if($redirectTarget.Contains("0000000000")){
+        $redirectID = $redirectTarget.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
+        foreach($productItem in $productsList){
+            if($productItem.ID -eq $redirectID){
+                $redirect.Target = $redirectTarget.Replace($redirectID, $productItem.EAN)
+                Write-Host $number - $redirect.Target "redirect rule was updated"
+            }
+        }
+        $updateRecord = [PSCustomObject]@{
+        "Num" = $number
+        "Target" = $redirect.Target
+        "ProductID" = $redirectID
+        }
+        $redirectRulesUpdate.Add($updateRecord) > $null
+        $number ++
+    }
+}
+
+Write-Host "`nRedirect Rules After Update" -ForegroundColor Green
+ $redirectRulesUpdate | Format-table
+# $redirectRulesWithID | Show-ListView
