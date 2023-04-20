@@ -18,8 +18,9 @@ if($result -ne "ok")
     Exit
 }
 
-$redirects = Get-ChildItem -Path "master:/" + $redirectsRootFolder.Paths.Path -Language $languageOption
-$products = Get-ChildItem -Path "master:/" + $productRepositoryPath.Paths.Path -Language $languageOption | Get-ChildItem
+$number = 1
+$redirects = Get-ChildItem -Path ("master:/" + $redirectsRootFolder.Paths.Path) -Language $languageOption
+$products = Get-ChildItem -Path ("master:/" + $productRepositoryPath.Paths.Path) -Language $languageOption | Get-ChildItem
 
 $number = 1
 $productsList = [System.Collections.ArrayList]@()
@@ -53,7 +54,8 @@ Write-Host "`nRedirect Rules" -ForegroundColor Green
 $redirectRules | Format-table
 
 Write-Host "`nUpdating Redirect Rules" -ForegroundColor Green
-$number = 1
+# $number = 1
+$count = 0
 $redirectRulesUpdate = [System.Collections.ArrayList]@()
 foreach($redirect in $redirects) {
     $redirectTarget = $redirect.Target
@@ -62,19 +64,20 @@ foreach($redirect in $redirects) {
         foreach($productItem in $productsList){
             if($productItem.ID -eq $redirectID){
                 $redirect.Target = $redirectTarget.Replace($redirectID, $productItem.EAN)
-                Write-Host $number - $redirect.Target "redirect rule was updated"
-            }
-        }
-        $updateRecord = [PSCustomObject]@{
+               # Write-Host $number - $redirect.Target "redirect rule was updated"
+                $updateRecord = [PSCustomObject]@{
         "Num" = $number
         "Target" = $redirect.Target
         "ProductID" = $redirectID
         }
         $redirectRulesUpdate.Add($updateRecord) > $null
-        $number ++
+       # $number ++
+        $count ++
+            }
+        }
     }
 }
-
+Write-Host "Updated " $count " Found Values"
 Write-Host "`nRedirect Rules After Update" -ForegroundColor Green
  $redirectRulesUpdate | Format-table
 # $redirectRulesWithID | Show-ListView
