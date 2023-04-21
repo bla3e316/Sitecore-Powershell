@@ -85,7 +85,7 @@ $number = 1
 foreach($redirect in $redirects) {
     $redirectTarget = $redirect.Target
     if($redirectTarget.Contains("0000000000")){
-        Write-Host $number - "EAN was not found for " $redirect.Target 
+        Write-Host $number - "Product ID not found for " $redirect.Target 
         $number ++
     }
 }
