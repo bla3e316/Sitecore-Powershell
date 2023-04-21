@@ -53,9 +53,8 @@ foreach($redirect in $redirects) {
 Write-Host "`nRedirect Rules" -ForegroundColor Green
 $redirectRules | Format-table
 
-Write-Host "`nUpdating Redirect Rules" -ForegroundColor Green
-$number = 1
 $count = 0
+$number = 1
 $redirectRulesUpdate = [System.Collections.ArrayList]@()
 foreach($redirect in $redirects) {
     $redirectTarget = $redirect.Target
@@ -71,13 +70,22 @@ foreach($redirect in $redirects) {
                 }
                 $redirectRulesUpdate.Add($updateRecord) > $null
                 $count ++
+                $number ++
             }
         }
-        Write-Host $number - "Product ID was not found for " $redirect.Target 
+    }
+}
+Write-Host "`nRedirect Rules After Update" -ForegroundColor Green
+Write-Host "Updated " $count " Redirects"
+$redirectRulesUpdate | Format-table
+# $redirectRulesWithID | Show-ListView
+
+Write-Host "`nRedirect Rules Problems" -ForegroundColor Green
+$number = 1
+foreach($redirect in $redirects) {
+    $redirectTarget = $redirect.Target
+    if($redirectTarget.Contains("0000000000")){
+        Write-Host $number - "EAN was not found for " $redirect.Target 
         $number ++
     }
 }
-Write-Host "Updated " $count " Found Values"
-Write-Host "`nRedirect Rules After Update" -ForegroundColor Green
-$redirectRulesUpdate | Format-table
-# $redirectRulesWithID | Show-ListView
