@@ -22,7 +22,7 @@ $products = Get-ChildItem -Path ("master:/" + $productRepositoryPath.Paths.Path)
 $number = 1
 $report = [string]@()
 $productsList = [System.Collections.ArrayList]@()
-$report += "Products`n"
+$report += "All $languageOption Products`n"
 foreach($product in $products){
     $t4n = $product.DisplayName
     $t4i = $product.Code
@@ -37,106 +37,134 @@ foreach($product in $products){
     $report += "`n$number  Name - $t4n, ID - $t4i, EAN - $t4e"
     $number ++
 }
-#  Write-Host "`nProduct List" -ForegroundColor Green
-#  $productsList | Format-table
+# Write-Host "`nAll $languageOption Products" -ForegroundColor Green
+# $productsList | Format-table
 # $productIDCodeList | Show-ListView
 
 $number = 1
 $redirectRules = [System.Collections.ArrayList]@()
-$report += "`n`nRedirect Rules`n"
-foreach($redirect in $redirects) {
-    $rP = $redirect.Path
-    $rT = $redirect.Target
+$report += "`n`nAll Redirect Rules`n"
+foreach($redirectRule in $redirects) {
+    $rP = $redirectRule.Path
+    $rT = $redirectRule.Target
         $redirectRecord = [PSCustomObject]@{
         "Num" = $number
-        "Path" = $redirect.Path
-        "Target" = $redirect.Target
+        "Path" = $rP
+        "Target" = $rT
         }
     $redirectRules.Add($redirectRecord) > $null
     $report += "`n$number  Path - $rP, Target - $rT"
     $number ++
 }
-Write-Host "`nRedirect Rules" -ForegroundColor Green
+Write-Host "`nAll Redirect Rules" -ForegroundColor Green
 $redirectRules | Format-table
+# $redirectRules | Show-ListView
 
 $number = 1
-$productRedirectRules = [System.Collections.ArrayList]@()
-$report += "`n`nProduct Redirect Rules`n"
-foreach($redirect in $redirects) {
-    $pP = $redirect.Path
-    $pT = $redirect.Target
-    if(($pP.Contains("0000000000")) -or ($pT.Contains("0000000000"))){
-        $productRedirectRecord = [PSCustomObject]@{
+$allProductRedirectRules = [System.Collections.ArrayList]@()
+$report += "`n`nAll Product Redirect Rules`n"
+foreach($allProductRedirectRule in $redirects) {
+    $aP = $allProductRedirectRule.Path
+    $aT = $allProductRedirectRule.Target
+    if(($aP.Contains("0000000000")) -or ($aT.Contains("0000000000"))){
+        $allProductRedirectRecord = [PSCustomObject]@{
         "Num" = $number
-        "Path" = $redirect.Path
-        "Target" = $redirect.Target
+        "Path" = $aP
+        "Target" = $aT
         }
-        $productRedirectRules.Add($productRedirectRecord) > $null
-    $report += "`n$number  Path - $pP, Target - $pT"
+        $allProductRedirectRules.Add($allProductRedirectRecord) > $null
+    $report += "`n$number  Path - $aP, Target - $aT"
     $number ++
     }
 }
-Write-Host "`nProduct Redirect Rules" -ForegroundColor Green
-$productRedirectRules | Format-table
+Write-Host "`nAll Product Redirect Rules" -ForegroundColor Green
+$allProductRedirectRules | Format-table
+# $allProductRedirectRules | Show-ListView
 
 $number = 1
-$redirectRuleCreateList = [System.Collections.ArrayList]@()
-$report += "`n`nRedirect Rules After Update`n"
-foreach($productRedirectRule in $productRedirectRules) {
+$oldProductRedirectRules = [System.Collections.ArrayList]@()
+$report += "`n`nOld Product Redirect Rules`n"
+foreach($oldProductRedirectRule in $redirects) {
+    $oP = $oldProductRedirectRule.Path
+    $oT = $oldProductRedirectRule.Target
+    if($oT.Contains("0000000000")){
+        $oldProductRedirectRecord = [PSCustomObject]@{
+        "Num" = $number
+        "Path" = $oP
+        "Target" = $oT
+        }
+        $oldProductRedirectRules.Add($oldProductRedirectRecord) > $null
+    $report += "`n$number  Path - $oP, Target - $oT"
+    $number ++
+    }
+}
+Write-Host "`nOld Product Redirect Rules" -ForegroundColor Green
+$oldProductRedirectRules | Format-table
+# $oldProductRedirectRules | Show-ListView
+
+$number = 1
+$createRedirectRuleList = [System.Collections.ArrayList]@()
+$report += "`n`nNew ID EAN Redirect Rules`n"
+foreach($redirect in $redirects) {
     $redirectTarget = $redirect.Target
-    $redirectID = $redirectTarget.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
-    foreach($productItem in $productsList){
-        if($productItem.ID -eq $redirectID){
-            $displayName = $redirect.DisplayName
-            $newClone = New-ItemClone -Path $redirect.Paths.Path -Destination $redirectsRootFolder -Name "$displayName - ID to EAN"
+    if($redirectTarget.Contains("0000000000")){
+        $redirectID = $redirectTarget.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
+        foreach($productItem in $productsList){
+            if($productItem.ID -eq $redirectID){
+                $displayName = $redirect.DisplayName
+                $newClone = New-ItemClone -Path $redirect.Paths.Path -Destination $redirectsRootFolder -Name "$displayName - ID to EAN"
                 
-            $item = Get-Item $newClone.Paths.Path -Language $languageOption
-            $item.Editing.BeginEdit()
-            $item.Path = $redirectTarget 
-            $item.Target = $redirectTarget.Replace($redirectID, $productItem.EAN)
-            $item.Editing.EndEdit()
+                $item = Get-Item $newClone.Paths.Path -Language $languageOption
+                $item.Editing.BeginEdit()
+                $item.Path = $redirectTarget 
+                $item.Target = $redirectTarget.Replace($redirectID, $productItem.EAN)
+                $item.Editing.EndEdit()
                 
-            $nP = $item.Path
-            $nT = $item.Target
-            $updateRecord = [PSCustomObject]@{
-                "Num" = $number
-                "Path" = $item.Path
-                "Target" = $item.Target
+                $nP = $item.Path
+                $nT = $item.Target
+                $createRedirectRuleRecord = [PSCustomObject]@{
+                    "Num" = $number
+                    "Path" = $item.Path
+                    "Target" = $item.Target
+                }
+                $createRedirectRuleList.Add($createRedirectRuleRecord) > $null
+                $report += "`n$number new redirect rule - Path $nP, Target $nT"
+                $number ++
             }
-            $redirectRuleCreateList.Add($updateRecord) > $null
-            $report += "`n$number new redirect rule - Path $nP, Target $nT"
-            $number ++
         }
     }
 }
 Write-Host "`nNew ID EAN Redirect Rules" -ForegroundColor Green
-$redirectRuleCreateList | Format-table
-# $redirectRulesCreate | Show-ListView
+$createRedirectRuleList | Format-table
+# $createRedirectRuleList | Show-ListView
 
 $number = 1
-$redirectRulesProblems = [System.Collections.ArrayList]@()
-$report += "`n`nRedirect Rule Problems`n"
-foreach($redirect in $productRedirectRules) {
-    $redirectTarget = $redirect.Target
-    foreach($redirectCreate in $redirectRuleCreateList){
-            if ($redirectTarget -ne $redirectCreate.Path){
-            # Write-Host $number - "Product ID not found for " $redirect.Target
-            $rTarget = $redirectTarget.Replace('" />','').Replace('<link linktype="external" ','')
-            $rID = $rTarget.Split('/')[-1]
-            $problemRecord = [PSCustomObject]@{
-                    "Num" = $number
-                    "Target" = $redirect.Target.Replace('" />','').Replace('<link linktype="external" ','')
-                    "Description" = "Product ID - $rID not found"
-            }
-            $redirectRulesProblems.Add($problemRecord) > $null
-            $report += "`n$number  Product ID - $rID not found for $rTarget"
-            $number ++
-            }
+$redirectRuleProblems = [System.Collections.ArrayList]@()
+$report += "`n`nRedirect Rules Problems`n"
+$oldR = [System.Collections.ArrayList]@()
+$newR = [System.Collections.ArrayList]@()
+foreach($oldRedirect in $oldProductRedirectRules) {
+    $oldR.Add($oldRedirect.Target) > $null
+}
+foreach($newRedirect in $createRedirectRuleList){
+    $newR.Add($newRedirect.Path) > $null
+}
+$redirectRuleProblemList = ($oldR | Where {$newR -NotContains $_}) + ($newR | Where {$oldR -NotContains $_})
+foreach($redirectRuleProblem in $redirectRuleProblemList){
+    $ID = $redirectRuleProblem.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
+    $redirectRuleProblemRecord = [PSCustomObject]@{
+            "Num" = $number
+            "Target" = $redirectRuleProblem.Replace('" />','').Replace('<link linktype="external" ','')
+            "Description" = "Product ID - $ID not found"
     }
+    $redirectRuleProblems.Add($redirectRuleProblemRecord) > $null
+    Write-Host $number - "$number  Product ID - $ID not found for $redirectRuleProblemRecord"
+    $report += "`n$number  Product ID - $ID not found for $redirectRuleProblemRecord"
+    $number ++
 }
 Write-Host "`nRedirect Rule Problems" -ForegroundColor Green
-$redirectRulesProblems | Format-table
+$redirectRuleProblems | Format-table
 # $redirectRulesProblems | Show-ListView
 
-# Write-Host "Search started $(Get-Date -format 'u')" -ForegroundColor Green
+Write-Host "`nReport Out-Download" -ForegroundColor Green
 $report | Out-Download -Name "report-$languageOption $(Get-Date -format 'MM/dd/yyyy HH:mm').txt"
