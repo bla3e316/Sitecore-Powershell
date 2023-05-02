@@ -60,26 +60,6 @@ Write-Host "`nAll Redirect Rules" -ForegroundColor Green
 $redirectRules | Format-table
 
 $number = 1
-$allProductRedirectRules = [System.Collections.ArrayList]@()
-$report += "`n`n--- All Product Redirect Rules ---`n"
-foreach($allProductRedirectRule in $redirects) {
-    $aP = $allProductRedirectRule.Path
-    $aT = $allProductRedirectRule.Target
-    if(($aP.Contains("0000000000")) -or ($aT.Contains("0000000000"))){
-        $allProductRedirectRecord = [PSCustomObject]@{
-        "Num" = $number
-        "Path" = $aP
-        "Target" = $aT
-        }
-        $allProductRedirectRules.Add($allProductRedirectRecord) > $null
-    $report += "`n$number  Path - $aP, Target - $aT"
-    $number ++
-    }
-}
-Write-Host "`nAll Product Redirect Rules" -ForegroundColor Green
-$allProductRedirectRules | Format-table
-
-$number = 1
 $oldProductRedirectRules = [System.Collections.ArrayList]@()
 $report += "`n`n--- Old Product Redirect Rules ---`n"
 foreach($oldProductRedirectRule in $redirects) {
@@ -105,16 +85,19 @@ $createRedirectRuleList = [System.Collections.ArrayList]@()
 $errorList = [System.Collections.ArrayList]@()
 $report += "`n`n--- New ID EAN Redirect Rules ---`n"
 foreach($redirect in $redirects) {
+    if ($redirect.Name.Contains("- ID to EAN")){
+        continue
+    }
     $redirectPath = $redirect.Path
     $redirectTarget = $redirect.Target
     $redirectID = $redirectTarget.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
     $redirectEAN = $redirectPath.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
-    if(($redirectTarget.Contains("0000000000")) -And (!$redirectEAN.StartsWith("40"))){
+    if(($redirectTarget.Contains("00000000")) -And (!$redirectEAN.StartsWith("40"))){
         foreach($productItem in $productsList){
             if($productItem.ID -eq $redirectID){
                 $displayName = $redirect.DisplayName
                 $newClone = New-ItemClone -Path $redirect.Paths.Path -Destination $redirectsRootFolder -Name "$displayName - ID to EAN" -ErrorAction SilentlyContinue -ErrorVariable myError
-                if(($myError.Count -eq 0) -and (!$newClone.DisplayName.Contains("- ID to EAN - ID to EAN"))){
+                if($myError.Count -eq 0){
                     $item = Get-Item $newClone.Paths.Path -Language $languageOption
                     $item.Editing.BeginEdit()
                     $item.Path = $redirectTarget 
