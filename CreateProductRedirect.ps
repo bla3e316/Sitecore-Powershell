@@ -60,12 +60,32 @@ Write-Host "`nAll Redirect Rules" -ForegroundColor Green
 $redirectRules | Format-table
 
 $number = 1
+$allProductRedirectRules = [System.Collections.ArrayList]@()
+$report += "`n`n--- All Product Redirect Rules ---`n"
+foreach($allProductRedirectRule in $redirects) {
+    $aP = $allProductRedirectRule.Path
+    $aT = $allProductRedirectRule.Target
+    if(($aP.Contains("00000000")) -or ($aT.Contains("00000000"))){
+        $allProductRedirectRecord = [PSCustomObject]@{
+        "Num" = $number
+        "Path" = $aP
+        "Target" = $aT
+        }
+        $allProductRedirectRules.Add($allProductRedirectRecord) > $null
+    $report += "`n$number  Path - $aP, Target - $aT"
+    $number ++
+    }
+}
+Write-Host "`nAll Product Redirect Rules" -ForegroundColor Green
+$allProductRedirectRules | Format-table
+
+$number = 1
 $oldProductRedirectRules = [System.Collections.ArrayList]@()
 $report += "`n`n--- Old Product Redirect Rules ---`n"
 foreach($oldProductRedirectRule in $redirects) {
     $oP = $oldProductRedirectRule.Path
     $oT = $oldProductRedirectRule.Target
-    if($oT.Contains("0000000000")){
+    if($oT.Contains("00000000")){
         $oldProductRedirectRecord = [PSCustomObject]@{
         "Num" = $number
         "Path" = $oP
