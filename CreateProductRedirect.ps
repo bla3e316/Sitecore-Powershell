@@ -79,7 +79,7 @@ if($redirectPathsPath -eq $null)
 foreach($product in $products){
     $productID = $product.Code
     $productEAN = $product.EAN
-    $productDisplayName = $product.DisplayName.Replace("$([char]0x00AE)","").Replace("(","").Replace(")","")
+    $productDisplayName = $product.DisplayName.Replace("$([char]0x00AE)","").Replace("(","").Replace(")","").Replace("."," ")
     $redirectName = "$productDisplayName - $productID to $productEAN"
     $parentItem = Get-Item $product.Paths.ParentPath -Language $languageOption
     $parentItemDisplayName = $parentItem.DisplayName.Replace("$([char]0x00AE)","").Replace(" ","-")
@@ -114,7 +114,7 @@ foreach($product in $products){
         $errorText = $myError[0].Message
         $errorRecord = [PSCustomObject]@{
             "Num" = $errNumber
-            "Descroption" = $errorText
+            "Descroption" = "$productDisplayName - $errorText"
         }
         $errorList.Add($errorRecord) > $null
         $report += "`n$errNumber - Error - $productDisplayName - $errorText"
@@ -125,26 +125,6 @@ Write-Host "`nNew ID EAN Redirect Rules" -ForegroundColor Green
 $createRedirectRuleList | Format-table
 Write-Host "`nErrors during Redirect clone" -ForegroundColor Green
 $errorList | Format-table
-
-$number = 1
-$oldProductRedirectRules = [System.Collections.ArrayList]@()
-$report += "`n`n--- Old Product Redirect Rules ---`n"
-foreach($oldProductRedirectRule in $redirects) {
-    $oP = $oldProductRedirectRule.Path
-    $oT = $oldProductRedirectRule.Target
-    if($oT.Contains("00000000")){
-        $oldProductRedirectRecord = [PSCustomObject]@{
-        "Num" = $number
-        "Path" = $oP
-        "Target" = $oT
-        }
-        $oldProductRedirectRules.Add($oldProductRedirectRecord) > $null
-    $report += "`n$number  Path - $oP, Target - $oT"
-    $number ++
-    }
-}
-Write-Host "`nOld Product Redirect Rules" -ForegroundColor Green
-$oldProductRedirectRules | Format-table
 
 $redirects = Get-ChildItem -Path ("master:/" + $redirectsRootFolder.Paths.Path) -Language $languageOption
 $number = 1
