@@ -1,15 +1,18 @@
 $languageOptions = New-Object System.Collections.Specialized.OrderedDictionary
+$languageOptions.Add("en-GB", "en-GB")
+$languageOptions.Add("fr-FR", "fr-FR")
 $languageOptions.Add("cs-CZ", "cs-CZ")
 $languageOptions.Add("de-DE", "de-DE")
-$languageOptions.Add("fr-FR", "fr-FR")
-$languageOptions.Add("en-AU", "en-AU")
-$languageOptions.Add("en-GB", "en-GB")
 $languageOptions.Add("es-ES", "es-ES")
+$languageOptions.Add("en-AU", "en-AU")
 
 $websiteOptions = New-Object System.Collections.Specialized.OrderedDictionary
+$websiteOptions.Add("UK", "https://uk")
+$websiteOptions.Add("FR", "https://fr")
 $websiteOptions.Add("CZ", "https://cs-cz")
-$websiteOptions.Add("DE", "https://de-de/shop")
-$websiteOptions.Add("UK", "https://co.uk")
+$websiteOptions.Add("DE", "https://de-de")
+$websiteOptions.Add("ES", "https://es-es")
+$websiteOptions.Add("AU", "https://au")
 
 $result = Read-Variable -Parameters `
     @{ Name = "redirectsRootFolder"; Title="Redirects Root Folder"; Source="Datasource=/sitecore/content/Redirects"; editor="droptree"}, `
@@ -79,7 +82,14 @@ if($redirectPathsPath -eq $null)
 foreach($product in $products){
     $productID = $product.Code
     $productEAN = $product.EAN
-    $productDisplayName = $product.DisplayName.Replace("$([char]0x00AE)","").Replace("(","").Replace(")","").Replace("."," ")
+    $productDisplayName = $product.DisplayName.Replace("$([char]0x00AE)","")
+    
+    $replaceTable = @{"ß"="ss";"à"="a";"á"="a";"â"="a";"ã"="a";"ä"="a";"å"="a";"æ"="ae";"ç"="c";"è"="e";"é"="e";"ê"="e";"ë"="e";"ì"="i";"í"="i";"î"="i";"ï"="i";"ð"="d";"ñ"="n";"ò"="o";"ó"="o";"ô"="o";"õ"="o";"ö"="o";"ø"="o";"ù"="u";"ú"="u";"û"="u";"ü"="u";"ý"="y";"þ"="p";"ÿ"="y"}
+    foreach($key in $replaceTable.Keys){
+        $productDisplayName = $productDisplayName -Replace($key,$replaceTable.$key)
+    }
+    $productDisplayName = $productDisplayName -replace '[^a-zA-Z0-9\s]', ''
+    
     $redirectName = "$productDisplayName - $productID to $productEAN"
     $parentItem = Get-Item $product.Paths.ParentPath -Language $languageOption
     $parentItemDisplayName = $parentItem.DisplayName.Replace("$([char]0x00AE)","").Replace(" ","-")
@@ -88,7 +98,7 @@ foreach($product in $products){
     $newRedirectPath = "$parentItemDisplayName/$productID"
     $newRedirectTarget = "$base url='$path/$productEAN' />"
     
-    $newClone = New-ItemClone -Path $redirectPathsPath -Destination $redirectsRootFolder -Name $redirectName -ErrorAction SilentlyContinue -ErrorVariable myError
+    $newClone = New-ItemClone -Path $redirectPathsPath -Destination $redirectsRootFolder -Name $redirectName.Trim() -ErrorAction SilentlyContinue -ErrorVariable myError
     if($myError.Count -eq 0){
         $item = Get-Item $newClone.Paths.Path -Language $languageOption
         $itemPath = $item.Path
@@ -125,29 +135,6 @@ Write-Host "`nNew ID EAN Redirect Rules" -ForegroundColor Green
 $createRedirectRuleList | Format-table
 Write-Host "`nErrors during Redirect clone" -ForegroundColor Green
 $errorList | Format-table
-
-$redirects = Get-ChildItem -Path ("master:/" + $redirectsRootFolder.Paths.Path) -Language $languageOption
-$number = 1
-$idEANRedirectRuleList = [System.Collections.ArrayList]@()
-$report += "`n`n--- All ID EAN Redirect Rules ---`n"
-foreach($redirect in $redirects) {
-    $redirectPath = $redirect.Path
-    $redirectTarget = $redirect.Target
-    $pathID = $redirectPath.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
-    $targetID = $redirectTarget.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
-    if(($redirectPath.Contains("00000000")) -And ($targetID.StartsWith("40"))){
-        $idEANRedirectRuleRecord = [PSCustomObject]@{
-                    "Num" = $number
-                    "Path" = $redirectPath
-                    "Target" = $redirectTarget
-                }
-        $idEANRedirectRuleList.Add($idEANRedirectRuleRecord) > $null
-        $report += "`n$number - Path $redirectPath, Target $redirectTarget"
-        $number ++
-    }
-}
-Write-Host "`nAll ID EAN Redirect Rules" -ForegroundColor Green
-$idEANRedirectRuleList | Format-table
 
 Write-Host "Report Out-Download`n" -ForegroundColor Green
 $report | Out-Download -Name "report-$languageOption $(Get-Date -format 'MM/dd/yyyy HH:mm').txt"
