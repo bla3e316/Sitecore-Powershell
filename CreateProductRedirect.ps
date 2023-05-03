@@ -71,26 +71,32 @@ $errNumber = 1
 $createRedirectRuleList = [System.Collections.ArrayList]@()
 $errorList = [System.Collections.ArrayList]@()
 $report += "`n`n--- New ID EAN Redirect Rules ---`n"
+$redirectPathsPath = $redirects[0].Paths.Path
+if($redirectPathsPath -eq $null)
+{
+    $redirectPathsPath = $redirects.Paths.Path
+}
 foreach($product in $products){
-    $productDisplayName = $product.DisplayName.Replace("$([char]0x00AE)","")
     $productID = $product.Code
     $productEAN = $product.EAN
+    $productDisplayName = $product.DisplayName.Replace("$([char]0x00AE)","").Replace("(","").Replace(")","")
+    $redirectName = "$productDisplayName - $productID to $productEAN"
     $parentItem = Get-Item $product.Paths.ParentPath -Language $languageOption
     $parentItemDisplayName = $parentItem.DisplayName.Replace("$([char]0x00AE)","").Replace(" ","-")
     $path = "$websiteOption/$parentItemDisplayName"
     $base = '<link linktype="external"'
-    $newRedirectPath = "$base url=$path/$productID />"
-    $newRedirectTarget = "$base url=$path/$productEAN />"
+    $newRedirectPath = "$parentItemDisplayName/$productID"
+    $newRedirectTarget = "$base url='$path/$productEAN' />"
     
-    $newClone = New-ItemClone -Path $redirects[0].Paths.Path -Destination $redirectsRootFolder -Name "$productDisplayName - ID to EAN" -ErrorAction SilentlyContinue -ErrorVariable myError
+    $newClone = New-ItemClone -Path $redirectPathsPath -Destination $redirectsRootFolder -Name $redirectName -ErrorAction SilentlyContinue -ErrorVariable myError
     if($myError.Count -eq 0){
         $item = Get-Item $newClone.Paths.Path -Language $languageOption
         $itemPath = $item.Path
         $itemTarget = $item.Target
         
         $item.Editing.BeginEdit()
-        $item.Path = $newRedirectPath 
-        $item.Target = $newRedirectTarget
+        $item.Path = $newRedirectPath.ToLower() 
+        $item.Target = $newRedirectTarget.ToLower()
         $item.Editing.EndEdit()
                 
         $nP = $item.Path
@@ -101,7 +107,7 @@ foreach($product in $products){
             "Target" = $item.Target
         }
         $createRedirectRuleList.Add($createRedirectRuleRecord) > $null
-        $report += "`n$number new ID EAN redirect rule - Path $nP, Target $nT"
+        $report += "`n$number - Info - $productDisplayName - new ID EAN redirect rule - Path $nP, Target $nT"
         $number ++
     }
     if($myError.Count -gt 0){
@@ -111,7 +117,7 @@ foreach($product in $products){
             "Descroption" = $errorText
         }
         $errorList.Add($errorRecord) > $null
-        $report += "`n$errNumber $errorText"
+        $report += "`n$errNumber - Error - $productDisplayName - $errorText"
         $errNumber ++
     }
 }
@@ -140,62 +146,6 @@ foreach($oldProductRedirectRule in $redirects) {
 Write-Host "`nOld Product Redirect Rules" -ForegroundColor Green
 $oldProductRedirectRules | Format-table
 
-#$number = 1
-#$errNumber = 1
-#$createRedirectRuleList = [System.Collections.ArrayList]@()
-#$errorList = [System.Collections.ArrayList]@()
-#$report += "`n`n--- New ID EAN Redirect Rules ---`n"
-#foreach($redirect in $redirects) {
-#    if ($redirect.Name.Contains("- ID to EAN")){
-#        continue
-#    }
-#    $redirectPath = $redirect.Path
-#    $redirectTarget = $redirect.Target
-#    $redirectID = $redirectTarget.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
-#    $redirectEAN = $redirectPath.Replace('" />','').Replace('<link linktype="external" ','').Split('/')[-1]
-#    if(($redirectTarget.Contains("00000000")) -And (!$redirectEAN.StartsWith("40"))){
-#        foreach($productItem in $productsList){
-#            if($productItem.ID -eq $redirectID){
-#                $displayName = $redirect.DisplayName
-#                $newClone = New-ItemClone -Path $redirect.Paths.Path -Destination $redirectsRootFolder -Name "$displayName - ID to EAN" -ErrorAction SilentlyContinue -ErrorVariable myError
-#                if($myError.Count -eq 0){
-#                    $item = Get-Item $newClone.Paths.Path -Language $languageOption
-#                    $item.Editing.BeginEdit()
-#                    $item.Path = $redirectTarget 
-#                    $item.Target = $redirectTarget.Replace($redirectID, $productItem.EAN)
-#                    $item.Editing.EndEdit()
-#                
-#                    $nP = $item.Path
-#                    $nT = $item.Target
-#                    $createRedirectRuleRecord = [PSCustomObject]@{
-#                        "Num" = $number
-#                        "Path" = $item.Path
-#                        "Target" = $item.Target
-#                    }
-#                    $createRedirectRuleList.Add($createRedirectRuleRecord) > $null
-#                    $report += "`n$number new ID EAN redirect rule - Path $nP, Target $nT"
-#                    $number ++
-#                }
-#                if($myError.Count -gt 0){
-#                    $errorText = $myError[0].Message
-#                    
-#                     $errorRecord = [PSCustomObject]@{
-#                        "Num" = $errNumber
-#                        "Descroption" = $errorText
-#                    }
-#                    $errorList.Add($errorRecord) > $null
-#                    $report += "`n$errNumber $errorText"
-#                    $errNumber ++
-#                }
-#            }
-#        }
-#    }
-#}
-#Write-Host "`nNew ID EAN Redirect Rules" -ForegroundColor Green
-#$createRedirectRuleList | Format-table
-#Write-Host "`nErrors during Redirect clone" -ForegroundColor Green
-#$errorList | Format-table
-
 $redirects = Get-ChildItem -Path ("master:/" + $redirectsRootFolder.Paths.Path) -Language $languageOption
 $number = 1
 $idEANRedirectRuleList = [System.Collections.ArrayList]@()
@@ -218,34 +168,6 @@ foreach($redirect in $redirects) {
 }
 Write-Host "`nAll ID EAN Redirect Rules" -ForegroundColor Green
 $idEANRedirectRuleList | Format-table
-
-#$number = 1
-#$redirectRuleProblems = [System.Collections.ArrayList]@()
-#$redirectRuleDiff = [System.Collections.ArrayList]@()
-#$report += "`n`n---Redirect Rule Problems ---`n"
-#$oldR = [System.Collections.ArrayList]@()
-#$existR = [System.Collections.ArrayList]@()
-#foreach($oldRedirect in $oldProductRedirectRules) {
-#    $oldR.Add($oldRedirect.Target) > $null
-#}
-#foreach($existRedirect in $idEANRedirectRuleList){
-#    $existR.Add($existRedirect.Path) > $null
-#}
-#$redirectRuleDiff = ($oldR | Where {$existR -NotContains $_}) + ($existR | Where {$oldR -NotContains $_})
-#foreach($redirectRuleProblem in $redirectRuleDiff){
-#    $pTarget = $redirectRuleProblem.Replace('" />','').Replace('<link linktype="external" ','')
-#    $ID = $pTarget.Split('/')[-1]
-#    $redirectRuleProblemRecord = [PSCustomObject]@{
-#            "Num" = $number
-#            "Target" = $redirectRuleProblem.Replace('" />','').Replace('<link linktype="external" ','')
-#            "Description" = "Product ID - $ID not found in Product Repository"
-#    }
-#    $redirectRuleProblems.Add($redirectRuleProblemRecord) > $null
-#    $report += "`n$number  Product ID - $ID not found in Product Repository"
-#    $number ++
-#}
-#Write-Host "`nRedirect Rule Problems" -ForegroundColor Green
-#$redirectRuleProblems | Format-table
 
 Write-Host "Report Out-Download`n" -ForegroundColor Green
 $report | Out-Download -Name "report-$languageOption $(Get-Date -format 'MM/dd/yyyy HH:mm').txt"
