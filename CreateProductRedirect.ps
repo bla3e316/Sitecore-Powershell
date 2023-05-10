@@ -9,9 +9,9 @@ $languageOptions.Add("en-AU", "en-AU")
 $websiteOptions = New-Object System.Collections.Specialized.OrderedDictionary
 $websiteOptions.Add("UK", "https://uk")
 $websiteOptions.Add("FR", "https://fr")
-$websiteOptions.Add("CZ", "https://cs-cz")
-$websiteOptions.Add("DE", "https://de-de")
-$websiteOptions.Add("ES", "https://es-es")
+$websiteOptions.Add("CZ", "https://cs-")
+$websiteOptions.Add("DE", "https://de")
+$websiteOptions.Add("ES", "https://es")
 $websiteOptions.Add("AU", "https://au")
 
 $result = Read-Variable -Parameters `
@@ -109,9 +109,13 @@ foreach($product in $products){
     $newRedirectPath = "$parentItemDisplayName/$productID"
     $newRedirectTarget = "$base url='$path/$productEAN' />"
     
-    $newClone = New-ItemClone -Path $redirectPathsPath -Destination $redirectsRootFolder -Name $redirectName.Trim() -ErrorAction SilentlyContinue -ErrorVariable myError
+    $redirectNameTrim = $redirectName.Trim()
+    $redirectsRootFolderPathsPath = $redirectsRootFolder.Paths.Path
+    $newRedirectPathName = "$redirectsRootFolderPathsPath/$redirectNameTrim"
+    # $newClone = New-ItemClone -Path $redirectPathsPath -Destination $redirectsRootFolder -Name $redirectName.Trim() -ErrorAction SilentlyContinue -ErrorVariable myError
+    Copy-Item -Path $redirectPathsPath -Destination $newRedirectPathName -ErrorAction SilentlyContinue -ErrorVariable myError
     if($myError.Count -eq 0){
-        $item = Get-Item $newClone.Paths.Path -Language $languageOption
+        $item = Get-Item $newRedirectPathName -Language $languageOption
         $itemPath = $item.Path
         $itemTarget = $item.Target
         
