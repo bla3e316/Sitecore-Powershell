@@ -109,7 +109,7 @@ foreach($product in $products){
     $newRedirectPath = "$parentItemDisplayName/$productID"
     $newRedirectTarget = "$base url='$path/$productEAN' />"
     
-    $redirectNameTrim = $redirectName.Trim()
+    $redirectNameTrim = $redirectName.Trim().Truncate(35)
     $redirectsRootFolderPathsPath = $redirectsRootFolder.Paths.Path
     $newRedirectPathName = "$redirectsRootFolderPathsPath/$redirectNameTrim"
     # $newClone = New-ItemClone -Path $redirectPathsPath -Destination $redirectsRootFolder -Name $redirectName.Trim() -ErrorAction SilentlyContinue -ErrorVariable myError
