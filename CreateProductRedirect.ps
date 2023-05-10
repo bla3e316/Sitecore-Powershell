@@ -101,6 +101,9 @@ foreach($product in $products){
     }
     $productDisplayName = $productDisplayName -replace '[^a-zA-Z0-9\s]', ''
     
+    if($productDisplayName.Length -gt 35){
+        $productDisplayName = $productDisplayName.Substring(0,35)
+    }
     $redirectName = "$productDisplayName - $productID to $productEAN"
     $parentItem = Get-Item $product.Paths.ParentPath -Language $languageOption
     $parentItemDisplayName = $parentItem.DisplayName.Replace("$([char]0x00AE)","").Replace(" ","-")
@@ -109,7 +112,7 @@ foreach($product in $products){
     $newRedirectPath = "$parentItemDisplayName/$productID"
     $newRedirectTarget = "$base url='$path/$productEAN' />"
     
-    $redirectNameTrim = $redirectName.Trim().Truncate(35)
+    $redirectNameTrim = $redirectName.Trim()
     $redirectsRootFolderPathsPath = $redirectsRootFolder.Paths.Path
     $newRedirectPathName = "$redirectsRootFolderPathsPath/$redirectNameTrim"
     # $newClone = New-ItemClone -Path $redirectPathsPath -Destination $redirectsRootFolder -Name $redirectName.Trim() -ErrorAction SilentlyContinue -ErrorVariable myError
