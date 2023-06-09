@@ -1,3 +1,16 @@
+function get-sanitizedUTF8Input{
+    Param(
+        [String]$inputString
+    )
+    $replaceTable = @{"®"="";"ß"="ss";"à"="a";"á"="a";"â"="a";"ã"="a";"ä"="a";"å"="a";"æ"="ae";"ç"="c";"è"="e";"é"="e";"ê"="e";"ë"="e";"ì"="i";"í"="i";"î"="i";"ï"="i";"ð"="d";"ñ"="n";"ò"="o";"ó"="o";"ô"="o";"õ"="o";"ö"="o";"ø"="o";"ù"="u";"ú"="u";"û"="u";"ü"="u";"ý"="y";"þ"="p";"ÿ"="y"}
+
+    foreach($key in $replaceTable.Keys){
+        $inputString = $inputString.Replace($key,$replaceTable.$key)
+    }
+    $inputString = $inputString -replace '[^a-zA-Z0-9\s]', ''
+    return $inputString
+}
+
 $languageOptions = New-Object System.Collections.Specialized.OrderedDictionary
 $languageOptions.Add("en-GB", "en-GB")
 $languageOptions.Add("fr-FR", "fr-FR")
@@ -83,7 +96,8 @@ if($redirectPathsPath -eq $null)
 foreach($product in $products){
     $productID = $product.Code
     $productEAN = $product.EAN
-    $productDisplayName = $product.DisplayName.Replace("$([char]0x00AE)","")
+    $productDisplayName = get-sanitizedUTF8Input -inputString $product.DisplayName
+    
     if($productID -eq ""){
         $report += "`n$warnNumber - Warning - $productDisplayName - productID - $productID is empty, productEAN - $productEAN"
         $warnNumber ++
@@ -94,19 +108,13 @@ foreach($product in $products){
         $warnNumber ++
         continue
     }
-    
-    $replaceTable = @{"ß"="ss";"à"="a";"á"="a";"â"="a";"ã"="a";"ä"="a";"å"="a";"æ"="ae";"ç"="c";"è"="e";"é"="e";"ê"="e";"ë"="e";"ì"="i";"í"="i";"î"="i";"ï"="i";"ð"="d";"ñ"="n";"ò"="o";"ó"="o";"ô"="o";"õ"="o";"ö"="o";"ø"="o";"ù"="u";"ú"="u";"û"="u";"ü"="u";"ý"="y";"þ"="p";"ÿ"="y"}
-    foreach($key in $replaceTable.Keys){
-        $productDisplayName = $productDisplayName -Replace($key,$replaceTable.$key)
-    }
-    $productDisplayName = $productDisplayName -replace '[^a-zA-Z0-9\s]', ''
-    
     if($productDisplayName.Length -gt 35){
-        $productDisplayName = $productDisplayName.Substring(0,35)
+        $productDisplayNameShort = $productDisplayName.Substring(0,35)
     }
-    $redirectName = "$productDisplayName - $productID to $productEAN"
+    $redirectName = "$productDisplayNameShort - $productID to $productEAN"
     $parentItem = Get-Item $product.Paths.ParentPath -Language $languageOption
-    $parentItemDisplayName = $parentItem.DisplayName.Replace("$([char]0x00AE)","").Replace(" ","-")
+    $parentItemDisplayName = get-sanitizedUTF8Input -inputString $parentItem.DisplayName
+    $parentItemDisplayName = $parentItemDisplayName.Replace(" ","-")
     $path = "$websiteOption/$parentItemDisplayName"
     $base = '<link linktype="external"'
     $newRedirectPath = "$parentItemDisplayName/$productID"
@@ -117,7 +125,7 @@ foreach($product in $products){
     $newRedirectPathName = "$redirectsRootFolderPathsPath/$redirectNameTrim"
     # $newClone = New-ItemClone -Path $redirectPathsPath -Destination $redirectsRootFolder -Name $redirectName.Trim() -ErrorAction SilentlyContinue -ErrorVariable myError
     Copy-Item -Path $redirectPathsPath -Destination $newRedirectPathName -ErrorAction SilentlyContinue -ErrorVariable myError
-
+    
     if($myError.Count -eq 0){
         $item = Get-Item $newRedirectPathName -Language $languageOption
         $itemPath = $item.Path
@@ -149,10 +157,11 @@ foreach($product in $products){
         $report += "`n$errNumber - Error - $productDisplayName - $errorText"
         $errNumber ++
     }
+    
     $child = Get-ChildItem -Path $newRedirectPathName -Recurse
-    Get-Item -Path $child.Paths.Path | Remove-Item
+    $childPath = $child.Paths.Path
+    Get-Item -Path $childPath | Remove-Item
 }
-
 Write-Host "`nNew ID EAN Redirect Rules" -ForegroundColor Green
 $createRedirectRuleList | Format-table
 Write-Host "`nErrors during Redirect clone" -ForegroundColor Green
