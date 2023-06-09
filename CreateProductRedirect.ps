@@ -2,7 +2,7 @@ function get-sanitizedUTF8Input{
     Param(
         [String]$inputString
     )
-    $replaceTable = @{"®"="";"ß"="ss";"à"="a";"á"="a";"â"="a";"ã"="a";"ä"="a";"å"="a";"æ"="ae";"ç"="c";"è"="e";"é"="e";"ê"="e";"ë"="e";"ì"="i";"í"="i";"î"="i";"ï"="i";"ð"="d";"ñ"="n";"ò"="o";"ó"="o";"ô"="o";"õ"="o";"ö"="o";"ø"="o";"ù"="u";"ú"="u";"û"="u";"ü"="u";"ý"="y";"þ"="p";"ÿ"="y"}
+    $replaceTable = @{"®"="";"ß"="ss";"à"="a";"á"="a";"â"="a";"ã"="a";"ä"="a";"å"="a";"æ"="ae";"ç"="c";"è"="e";"é"="e";"ê"="e";"ë"="e";"ì"="i";"í"="i";"î"="i";"ï"="i";"ð"="d";"ñ"="n";"ò"="o";"ó"="o";"ô"="o";"õ"="o";"ö"="o";"ø"="o";"ù"="u";"ú"="u";"û"="u";"ü"="u";"ý"="y";"þ"="p";"ÿ"="y";"č"="c";"ě"="e";"ž"="z";"š"="s"}
 
     foreach($key in $replaceTable.Keys){
         $inputString = $inputString.Replace($key,$replaceTable.$key)
@@ -22,8 +22,8 @@ $languageOptions.Add("en-AU", "en-AU")
 $websiteOptions = New-Object System.Collections.Specialized.OrderedDictionary
 $websiteOptions.Add("UK", "https://uk")
 $websiteOptions.Add("FR", "https://fr")
-$websiteOptions.Add("CZ", "https://cs-")
-$websiteOptions.Add("DE", "https://de")
+$websiteOptions.Add("CZ", "https://cs")
+$websiteOptions.Add("DE", "https://de/shop")
 $websiteOptions.Add("ES", "https://es")
 $websiteOptions.Add("AU", "https://au")
 
@@ -117,7 +117,7 @@ foreach($product in $products){
     $parentItemDisplayName = $parentItemDisplayName.Replace(" ","-")
     $path = "$websiteOption/$parentItemDisplayName"
     $base = '<link linktype="external"'
-    $newRedirectPath = "$parentItemDisplayName/$productID"
+    $newRedirectPath = "shop/$parentItemDisplayName/$productID" #shop/ for DE
     $newRedirectTarget = "$base url='$path/$productEAN' />"
     
     $redirectNameTrim = $redirectName.Trim()
