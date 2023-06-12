@@ -109,15 +109,17 @@ foreach($product in $products){
         continue
     }
     if($productDisplayName.Length -gt 35){
-        $productDisplayNameShort = $productDisplayName.Substring(0,35)
+        $productDisplayName = $productDisplayName.Substring(0,35).Trim()
     }
-    $redirectName = "$productDisplayNameShort - $productID to $productEAN"
+    
+    $productDisplayName = $productDisplayName.Replace(" "," ")
+    $redirectName = "$productDisplayName - $productID to $productEAN"
     $parentItem = Get-Item $product.Paths.ParentPath -Language $languageOption
     $parentItemDisplayName = get-sanitizedUTF8Input -inputString $parentItem.DisplayName
     $parentItemDisplayName = $parentItemDisplayName.Replace(" ","-")
     $path = "$websiteOption/$parentItemDisplayName"
     $base = '<link linktype="external"'
-    $newRedirectPath = "shop/$parentItemDisplayName/$productID" #shop/ for DE
+    $newRedirectPath = "$parentItemDisplayName/$productID" #shop/ for DE
     $newRedirectTarget = "$base url='$path/$productEAN' />"
     
     $redirectNameTrim = $redirectName.Trim()
@@ -159,8 +161,10 @@ foreach($product in $products){
     }
     
     $child = Get-ChildItem -Path $newRedirectPathName -Recurse
-    $childPath = $child.Paths.Path
-    Get-Item -Path $childPath | Remove-Item
+    if($child.Count -gt 0){
+        $childPath = $child.Paths.Path
+        Get-Item -Path $childPath | Remove-Item
+    }
 }
 Write-Host "`nNew ID EAN Redirect Rules" -ForegroundColor Green
 $createRedirectRuleList | Format-table
